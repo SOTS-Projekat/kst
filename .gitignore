@@ -1,0 +1,18 @@
+# Virtuelno okruženje i Python cache
+Lib/
+Scripts/
+share/
+*.pyc
+*.pyo
+__pycache__/
+
+# PyCharm/IDE fajlovi
+.idea/
+*.iml
+
+# Sistemski fajlovi
+.DS_Store
+Thumbs.db
+
+# Ostalo
+*.log
