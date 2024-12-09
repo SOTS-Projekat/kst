@@ -1,25 +1,27 @@
 from flask import Flask, request, jsonify
 import pandas as pd
 from learning_spaces.kst import iita
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
-@app.route('/api/iita', methods=['POST'])
-def run_iita():
-    try:
-        # Uzimanje JSON podataka iz POST zahteva
-        data = request.get_json()
+@app.route("/iita", methods=["POST"])
+def iitaEndpoint():
+    request_data = request.get_json()
+    # print(request_data)
+    results = request_data
+    # input = {}
+    # for res in results:
+    #     input[res["studentId"]] = res["responses"]
 
-        # Pretvaranje podataka u DataFrame
-        data_frame = pd.DataFrame(data['responses'])
-
-        # Pozivanje IITA algoritma
-        response = iita(data_frame, v=data.get('v', 1))
-
-        # Slanje rezultata kao JSON
-        return response['implications']
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+    print(request_data)
+    data_frame = pd.DataFrame(results)
+    response = iita(data_frame, v=1)
+    print(response['implications'])
+    # print(pd.Series(response).to_json(orient="values"))
+    # return pd.Series(response).to_json(orient="values")
+    return response['implications']
 
 # Pokretanje Flask servera
 if __name__ == '__main__':
