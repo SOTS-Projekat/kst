@@ -11,7 +11,7 @@ ex:implies a rdf:Property .
 
 <http://example.org/kst/knowledgeDomain/latest_iita> a ex:KnowledgeDomain ;
     rdfs:label "latest_iita" ;
-    ex:generatedAt "2026-02-09T18:26:05.522002"^^xsd:dateTime .
+    ex:generatedAt "2026-02-09T18:34:37.732314"^^xsd:dateTime .
 
 <http://example.org/kst/item/1> a ex:Item ;
     rdfs:label "Item 1" ;
