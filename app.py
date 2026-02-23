@@ -1,105 +1,122 @@
-from flask import Flask, request, jsonify
-import pandas as pd
-from learning_spaces.kst import iita
-from flask_cors import CORS
-
-from rdflib import Graph, Namespace, Literal
-from rdflib.namespace import RDF, RDFS, XSD
-from datetime import datetime
 import os
+from datetime import datetime, timezone
+from pathlib import Path
+
+import pandas as pd
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from rdflib import Graph, Namespace, Literal, URIRef
+from rdflib.namespace import RDF, RDFS, OWL, XSD
+
+from learning_spaces.kst import iita
 
 app = Flask(__name__)
 CORS(app)
 
-EX = Namespace("http://example.org/kst/")
-def run_iita(matrix):
-    df = pd.DataFrame(matrix)
-    response = iita(df, v=1)
-    return response["implications"]  # usually list of tuples (a,b)
+EX = Namespace("http://example.org/eks/schema#")
+SCHEMA_PATH = "file:///C:/Users/Administrator/Documents/GitHub/Owl_Ontologija_NEW/schema.owl"
 
-def save_implications_ontology(implications, domain_id="latest_iita", out_dir="exports"):
-    os.makedirs(out_dir, exist_ok=True)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+EXPORT_DIR = os.path.join(BASE_DIR, "exports")
 
-    g = Graph()
-    g.bind("ex", EX)
-    g.bind("rdfs", RDFS)
-
-    domain_uri = EX[f"knowledgeDomain/{domain_id}"]
-    g.add((domain_uri, RDF.type, EX.KnowledgeDomain))
-    g.add((domain_uri, RDFS.label, Literal(domain_id)))
-    g.add((domain_uri, EX.generatedAt, Literal(datetime.utcnow().isoformat(), datatype=XSD.dateTime)))
-
-    items = {i for edge in implications for i in edge}
-    for i in sorted(items):
-        item_uri = EX[f"item/{i}"]
-        g.add((item_uri, RDF.type, EX.Item))
-        g.add((item_uri, RDFS.label, Literal(f"Item {i}")))
-
-    for a, b in implications:
-        g.add((EX[f"item/{a}"], EX.implies, EX[f"item/{b}"]))
-
-    path = os.path.join(out_dir, f"{domain_id}.ttl")
-    g.serialize(destination=path, format="turtle")
+def save_rdf(content: str, domain_name: str, extension: str) -> str:
+    Path(EXPORT_DIR).mkdir(parents=True, exist_ok=True)
+    safe = domain_name.replace(" ", "_")
+    path = os.path.join(EXPORT_DIR, f"{safe}.{extension}")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
     return path
 
-def build_ttl_from_edges(edges, nodes, domain_name):
+
+def build_graph_from_edges(edges, nodes, domain_name):
     g = Graph()
     g.bind("ex", EX)
     g.bind("rdfs", RDFS)
+    g.bind("owl", OWL)
 
-    domain_uri = EX[f"knowledgeDomain/{domain_name}"]
-    g.add((domain_uri, RDF.type, EX.KnowledgeDomain))
-    g.add((domain_uri, RDFS.label, Literal(domain_name)))
-    g.add((domain_uri, EX.generatedAt, Literal(datetime.utcnow().isoformat(), datatype=XSD.dateTime)))
+    safe_domain = domain_name.replace(" ", "_")   # Replace spaces with underscores for clean URIs
+    domain_uri = EX[f"domain/{safe_domain}"]
 
-    def node_uri(idx):
-        return EX[f"node/{nodes[idx]['id']}"]
+    # Create the ontology and import the schema
+    ontology_uri = EX[f"ontology/{safe_domain}"]
+    g.add((ontology_uri, RDF.type, OWL.Ontology))
+    g.add((ontology_uri, OWL.imports, URIRef(SCHEMA_PATH)))
 
+    # Create the Domain instance (using schema vocabulary)
+    g.add((domain_uri, RDF.type, EX.Domain))
+    g.add((domain_uri, EX.name, Literal(domain_name)))
+    g.add((domain_uri, RDFS.label, Literal(domain_name)))  # For Protégé display
+    g.add((domain_uri, EX.generatedAt, Literal(datetime.now(timezone.utc).isoformat(), datatype=XSD.dateTime)))
+
+    def competency_uri(idx: int):
+        return EX[f"competency/{nodes[idx]['id']}"]
+
+    # Create Competency instances
     for i, n in enumerate(nodes):
-        u = node_uri(i)
-        g.add((u, RDF.type, EX.Item))
-        g.add((u, RDFS.label, Literal(n.get("name", f"Item {i}"))))
-        g.add((u, EX.inDomain, domain_uri))
+        u = competency_uri(i)
+        comp_name = n.get("name", f"Competency {i}")
+        g.add((u, RDF.type, EX.Competency))
+        g.add((u, EX.name, Literal(comp_name)))
+        g.add((u, RDFS.label, Literal(comp_name)))  # For Protégé display
 
+        # Domain hasCompetency Competency (reversed from inDomain)
+        g.add((domain_uri, EX.hasCompetency, u))
+
+    # Create prerequisite relationships (using schema's prerequisiteOf)
     for a, b in edges:
-        g.add((node_uri(a), EX.implies, node_uri(b)))
+        g.add((competency_uri(a), EX.prerequisiteOf, competency_uri(b)))
 
-    return g.serialize(format="turtle")
+    return g
+
 
 @app.route("/iita", methods=["POST"])
 def iitaEndpoint():
-    matrix = request.get_json()
-    print(matrix)
+    request_data = request.get_json()
+    results = request_data
 
-    implications = run_iita(matrix)
-    print(implications)
+    #print(request_data)
+    data_frame = pd.DataFrame(results)
+    response = iita(data_frame, v=1)
+    #print(response["implications"])
 
-    try:
-        save_implications_ontology(implications, domain_id="latest_iita")
-    except Exception as e:
-        print("Ontology export failed:", str(e))
+    return response["implications"]
 
-    return implications
 
-@app.route("/iita/ontology", methods=["POST"])
-def iitaOntologyEndpoint():
+@app.route("/iita/rich", methods=["POST"])
+def iitaRichEndpoint():
     payload = request.get_json()
+
     matrix = payload["matrix"]
-    nodes = payload["nodes"]
-    domain_name = payload.get("domainName", "latest_iita")
+    items = payload["items"]
+    domain = payload.get("domain", {})
+    domain_name = domain.get("name", "latest_iita")
+
+    nodes = [{"id": it["nodeId"], "name": it.get("label", f"Item {it.get('col', '?')}")} for it in items]
 
     if not matrix or len(matrix[0]) != len(nodes):
         return jsonify({
-            "error": "nodes length must match matrix column count",
+            "error": "items/nodes length must match matrix column count",
             "matrix_cols": len(matrix[0]) if matrix else 0,
             "nodes_len": len(nodes)
         }), 400
 
-    implications = run_iita(matrix)
-    edges = [list(x) for x in implications]  # make JSON-like pairs
+    df = pd.DataFrame(matrix)
+    response = iita(df, v=1)
+    edges = [list(x) for x in response["implications"]]
 
-    ttl = build_ttl_from_edges(edges, nodes, domain_name)
-    return ttl, 200, {"Content-Type": "text/turtle"}
+    g = build_graph_from_edges(edges, nodes, domain_name)
 
-if __name__ == '__main__':
+    # Serialize to OWL/XML format
+    owl_content = g.serialize(format="xml")
+
+    # Save OWL file
+    owl_path = save_rdf(owl_content, domain_name, "owl")
+
+    return jsonify({
+        "status": "ok",
+        "savedTo": owl_path
+    })
+
+
+if __name__ == "__main__":
     app.run(debug=True)

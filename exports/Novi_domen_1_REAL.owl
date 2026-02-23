@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rdf:RDF xmlns:ex="http://example.org/eks/schema#"
+  xmlns:owl="http://www.w3.org/2002/07/owl#"
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+  <rdf:Description rdf:about="http://example.org/eks/schema#competency/33">
+    <rdf:type rdf:resource="http://example.org/eks/schema#Competency"/>
+    <ex:name>dva</ex:name>
+    <rdfs:label>dva</rdfs:label>
+    <ex:prerequisiteOf rdf:resource="http://example.org/eks/schema#competency/32"/>
+    <ex:prerequisiteOf rdf:resource="http://example.org/eks/schema#competency/34"/>
+    <ex:prerequisiteOf rdf:resource="http://example.org/eks/schema#competency/35"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="http://example.org/eks/schema#competency/34">
+    <rdf:type rdf:resource="http://example.org/eks/schema#Competency"/>
+    <ex:name>tri</ex:name>
+    <rdfs:label>tri</rdfs:label>
+    <ex:prerequisiteOf rdf:resource="http://example.org/eks/schema#competency/32"/>
+    <ex:prerequisiteOf rdf:resource="http://example.org/eks/schema#competency/33"/>
+    <ex:prerequisiteOf rdf:resource="http://example.org/eks/schema#competency/35"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="http://example.org/eks/schema#domain/Novi_domen_1_REAL">
+    <rdf:type rdf:resource="http://example.org/eks/schema#Domain"/>
+    <ex:name>Novi domen 1_REAL</ex:name>
+    <rdfs:label>Novi domen 1_REAL</rdfs:label>
+    <ex:generatedAt rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2026-02-10T19:49:19.444850+00:00</ex:generatedAt>
+    <ex:hasCompetency rdf:resource="http://example.org/eks/schema#competency/32"/>
+    <ex:hasCompetency rdf:resource="http://example.org/eks/schema#competency/33"/>
+    <ex:hasCompetency rdf:resource="http://example.org/eks/schema#competency/34"/>
+    <ex:hasCompetency rdf:resource="http://example.org/eks/schema#competency/35"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="http://example.org/eks/schema#ontology/Novi_domen_1_REAL">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Ontology"/>
+    <owl:imports rdf:resource="file:///C:/Users/Administrator/Documents/GitHub/Owl_Ontologija_NEW/schema.owl"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="http://example.org/eks/schema#competency/35">
+    <rdf:type rdf:resource="http://example.org/eks/schema#Competency"/>
+    <ex:name>c#</ex:name>
+    <rdfs:label>c#</rdfs:label>
+  </rdf:Description>
+  <rdf:Description rdf:about="http://example.org/eks/schema#competency/32">
+    <rdf:type rdf:resource="http://example.org/eks/schema#Competency"/>
+    <ex:name>jedan</ex:name>
+    <rdfs:label>jedan</rdfs:label>
+  </rdf:Description>
+</rdf:RDF>
